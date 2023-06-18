@@ -20,27 +20,33 @@ public class AuthPage extends JFrame {
     private ProfilePage profilePage;
 
     public AuthPage() {
-        setTitle("Authorization");
+        setTitle("APPARD BANK");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600); // Увеличили высоту окна
+        setSize(800, 600);
         setLocationRelativeTo(null);
-        setLayout(new GridBagLayout()); // Используем GridBagLayout для управления компонентами
+        setLayout(new GridBagLayout());
+
+        getContentPane().setBackground(Color.WHITE);
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.insets = new Insets(10, 10, 10, 10); // Добавляем отступы между компонентами
+        constraints.insets = new Insets(10, 10, 10, 10);
 
         JLabel emailLabel = new JLabel("Email:");
+        emailLabel.setForeground(Color.BLUE);
         emailField = new JTextField();
         JLabel passwordLabel = new JLabel("Password:");
+        passwordLabel.setForeground(Color.BLUE);
         passwordField = new JPasswordField();
 
         JButton loginButton = new JButton("Sign in");
         JButton registerButton = new JButton("Sign up");
 
-        // Установка оранжевого цвета для текста кнопок
-        loginButton.setForeground(Color.ORANGE);
-        registerButton.setForeground(Color.ORANGE);
+        loginButton.setForeground(Color.WHITE);
+        loginButton.setBackground(Color.BLUE);
+
+        registerButton.setForeground(Color.WHITE);
+        registerButton.setBackground(Color.BLUE);
 
         loginButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -49,7 +55,7 @@ public class AuthPage extends JFrame {
 
                 if (authenticate(email, password)) {
                     userEmail = email;
-                    JOptionPane.showMessageDialog(null, "Authorization succeed!");
+                    JOptionPane.showMessageDialog(null, "Authorization succeeded!");
                     profilePage = new ProfilePage();
                     setContentPane(profilePage);
                     revalidate();
@@ -59,7 +65,6 @@ public class AuthPage extends JFrame {
             }
         });
 
-        // Превращение кнопки "Зарегистрироваться" в гиперссылку
         registerButton.setBorderPainted(false);
         registerButton.setContentAreaFilled(false);
         registerButton.setFocusPainted(false);
@@ -68,16 +73,13 @@ public class AuthPage extends JFrame {
         registerButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Обработка нажатия на гиперссылку "Зарегистрироваться"
                 JOptionPane.showMessageDialog(null, "Registration");
-                // Обработка нажатия на гиперссылку "Зарегистрироваться"
                 RegistrationPage registrationPage = new RegistrationPage();
                 registrationPage.setVisible(true);
-                dispose(); // Закрыть текущую страницу авторизации
+                dispose();
             }
         });
 
-        // Размещение компонентов с помощью GridBagLayout
         constraints.gridx = 0;
         constraints.gridy = 0;
         add(emailLabel, constraints);
@@ -115,13 +117,11 @@ public class AuthPage extends JFrame {
             query.setParameter("email", email);
             query.setParameter("password", password);
             User user = query.uniqueResult();
-            return (user != null); // If user is found, authentication is successful
+            return (user != null);
         } finally {
             if (session != null) {
                 session.close();
             }
         }
     }
-
 }
-

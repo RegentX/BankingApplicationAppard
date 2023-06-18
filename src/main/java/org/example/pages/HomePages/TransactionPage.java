@@ -1,5 +1,6 @@
 package org.example.pages.HomePages;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.example.HibernateUtil;
 import org.example.entity.*;
@@ -27,12 +28,15 @@ public class TransactionPage extends JPanel {
 
     public TransactionPage() {
         setLayout(new BorderLayout());
+        setBackground(Color.WHITE); // Set background color
 
         // Create the menu bar
         menuBar = new JMenuBar();
+        menuBar.setBackground(Color.WHITE); // Set background color
 
         // Create the file menu
         fileMenu = new JMenu("Menu");
+        fileMenu.setForeground(Color.BLUE); // Set text color
 
         // Create the history menu item
         historyMenuItem = new JMenuItem("History");
@@ -43,6 +47,7 @@ public class TransactionPage extends JPanel {
             frame.setContentPane(historyPage);
             frame.revalidate();
         });
+        historyMenuItem.setForeground(Color.BLUE); // Set text color
 
         profileMenuItem = new JMenuItem("Profile");
         profileMenuItem.addActionListener(e -> {
@@ -52,6 +57,7 @@ public class TransactionPage extends JPanel {
             frame.setContentPane(profilePage);
             frame.revalidate();
         });
+        profileMenuItem.setForeground(Color.BLUE); // Set text color
 
         // Add the history menu item to the file menu
         fileMenu.add(historyMenuItem);
@@ -65,30 +71,129 @@ public class TransactionPage extends JPanel {
 
         // Create the tabbed pane
         tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(Color.WHITE); // Set background color
+
+        JTextField searchField = new JTextField(20);
+        JButton searchButton = new JButton("Search");
+        searchButton.setBackground(Color.WHITE); // Set button background color
+        searchButton.setForeground(Color.BLUE); // Set button text color
+
+        JPanel searchPanel = new JPanel();
+        searchPanel.setLayout(new FlowLayout());
+        searchPanel.setBackground(Color.WHITE); // Set background color
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
 
         // Create the "My Accounts" tab
         JPanel myAccountsPanel = new JPanel();
-        myAccountsPanel.setLayout(new FlowLayout());
+        myAccountsPanel.setLayout(new BorderLayout());
+        myAccountsPanel.setBackground(Color.WHITE); // Set background color
+
+        JPanel myAccountHeadPanel = new JPanel();
+        myAccountHeadPanel.setLayout(new FlowLayout());
+        myAccountHeadPanel.setBackground(Color.WHITE); // Set background color
+
         transactionPassport = getUserPassportByEmail(AuthPage.userEmail);
         List<Account> myAccounts = getUserAccountsByPassport(transactionPassport);
         for (Account account : myAccounts) {
             JPanel accountPanel = createAccountPanel2(account);
-            myAccountsPanel.add(accountPanel);
+            myAccountHeadPanel.add(accountPanel);
         }
+        myAccountsPanel.add(searchPanel, BorderLayout.NORTH);
+        myAccountsPanel.add(myAccountHeadPanel, BorderLayout.CENTER);
         tabbedPane.addTab("My Accounts", myAccountsPanel);
 
+        searchButton.addActionListener(e -> {
+            List<Account> searchResults;
+            String accountNumber = searchField.getText();
+            if (accountNumber.equals("all")) {
+                searchResults = getUserAccountsByPassport(transactionPassport);
+            } else {
+                searchResults = searchAccountsByAccountNumber(accountNumber);
+            }
+            // Remove all existing account panels
+            myAccountHeadPanel.removeAll();
+
+            // Add the search results to the panel
+            for (Account account : searchResults) {
+                JPanel accountPanel = createAccountPanel2(account);
+                myAccountHeadPanel.add(accountPanel);
+            }
+
+            myAccountHeadPanel.revalidate();
+            myAccountHeadPanel.repaint();
+        });
+
         // Create the "Other People" tab
+        JTextField searchField2 = new JTextField(20);
+        JButton searchButton2 = new JButton("Search");
+        searchButton2.setBackground(Color.WHITE); // Set button background color
+        searchButton2.setForeground(Color.BLUE); // Set button text color
+
+        JPanel searchPanel2 = new JPanel();
+        searchPanel2.setLayout(new FlowLayout());
+        searchPanel2.setBackground(Color.WHITE); // Set background color
+        searchPanel2.add(searchField2);
+        searchPanel2.add(searchButton2);
+
         JPanel otherPeoplePanel = new JPanel();
-        otherPeoplePanel.setLayout(new FlowLayout());
+        otherPeoplePanel.setLayout(new BorderLayout());
+        otherPeoplePanel.setBackground(Color.WHITE); // Set background color
+
+        JPanel otherAccountHeadPanel = new JPanel();
+        otherAccountHeadPanel.setLayout(new FlowLayout());
+        otherAccountHeadPanel.setBackground(Color.WHITE); // Set background color
+
         List<Account> otherPeopleAccounts = getOtherPeopleAccounts(transactionPassport);
         for (Account account : otherPeopleAccounts) {
             JPanel accountPanel = createAccountPanel(account);
-            otherPeoplePanel.add(accountPanel);
+            otherAccountHeadPanel.add(accountPanel);
         }
+        otherPeoplePanel.add(searchPanel2, BorderLayout.NORTH);
+        otherPeoplePanel.add(otherAccountHeadPanel, BorderLayout.CENTER);
         tabbedPane.addTab("Other People", otherPeoplePanel);
 
         // Add the tabbed pane to the panel
         add(tabbedPane, BorderLayout.CENTER);
+
+        searchButton2.addActionListener(e -> {
+            List<Account> searchResults;
+            String accountNumber = searchField2.getText();
+            if (accountNumber.equals("all")) {
+                searchResults = getOtherPeopleAccounts(transactionPassport);
+            } else {
+                searchResults = getOtherPersonAccountByAccountNumber(accountNumber, transactionPassport);
+            }
+            // Remove all existing account panels
+            otherAccountHeadPanel.removeAll();
+
+            // Add the search results to the panel
+            for (Account account : searchResults) {
+                JPanel accountPanel = createAccountPanel2(account);
+                otherAccountHeadPanel.add(accountPanel);
+            }
+
+            otherAccountHeadPanel.revalidate();
+            otherAccountHeadPanel.repaint();
+        });
+    }
+
+
+    public List<Account> searchAccountsByAccountNumber(String accountNumber) {
+        // Obtain Hibernate session
+        Session session = HibernateUtil.getSessionFactory().openSession();
+
+        try {
+            // Create a query to retrieve accounts with the given account number
+            String queryString = "SELECT a FROM Account a WHERE a.accountNumber = :accountNumber";
+            TypedQuery<Account> query = session.createQuery(queryString, Account.class);
+            query.setParameter("accountNumber", accountNumber);
+
+            // Execute the query and return the results
+            return query.getResultList();
+        } finally {
+            session.close();
+        }
     }
 
     private JPanel createAccountPanel(Account account) {
@@ -96,6 +201,7 @@ public class TransactionPage extends JPanel {
         accountPanel.setLayout(new BorderLayout());
         accountPanel.setPreferredSize(new Dimension(150, 100));
         accountPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        accountPanel.setBackground(Color.WHITE); // Set background color
 
         // Get account owner's initials
         User accountOwner = getUserByPassport(account.getPassport());
@@ -106,11 +212,13 @@ public class TransactionPage extends JPanel {
         JLabel ownerInitialsLabel = new JLabel(ownerInitials);
         ownerInitialsLabel.setFont(new Font("Arial", Font.BOLD, 24));
         ownerInitialsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        ownerInitialsLabel.setForeground(Color.BLUE); // Set text color
         accountPanel.add(ownerInitialsLabel, BorderLayout.CENTER);
 
         JLabel ownerAccountNumberLabel = new JLabel(ownerAccountNumber);
         ownerAccountNumberLabel.setFont(new Font("Arial", Font.BOLD, 24));
         ownerAccountNumberLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        ownerAccountNumberLabel.setForeground(Color.BLUE); // Set text color
         accountPanel.add(ownerAccountNumberLabel, BorderLayout.CENTER);
 
         // Create label for amount of money
@@ -128,6 +236,8 @@ public class TransactionPage extends JPanel {
                 showTransferWindow(transferToAccountNumber);
             }
         });
+        transferButton.setBackground(Color.WHITE); // Set button background color
+        transferButton.setForeground(Color.BLUE); // Set button text color
         accountPanel.add(transferButton, BorderLayout.NORTH);
 
         return accountPanel;
@@ -141,18 +251,14 @@ public class TransactionPage extends JPanel {
 
         JPanel transferPanel = new JPanel();
         transferPanel.setLayout(new GridLayout(3, 2));
-
-        // Create label and text field for account owner's initials
-//        JLabel ownerInitialsLabel = new JLabel("Account Owner Initials:");
-//        JTextField ownerInitialsField = new JTextField();
-//        ownerInitialsField.setEditable(false);
-//        transferPanel.add(ownerInitialsLabel);
-//        transferPanel.add(ownerInitialsField);
+        transferPanel.setBackground(Color.WHITE); // Set background color
 
         transactionPassport = getUserPassportByEmail(AuthPage.userEmail);
         List<Account> myAccounts = getUserAccountsByPassport(transactionPassport);
         JLabel senderAccountLabel = new JLabel("Account:");
+        senderAccountLabel.setForeground(Color.BLUE); // Set text color
         JComboBox<String> senderAccountComboBox = new JComboBox<>();
+        senderAccountComboBox.setBackground(Color.WHITE); // Set combo box background color
         for (Account account : myAccounts) {
             senderAccountComboBox.addItem(account.getAccountNumber());
         }
@@ -161,7 +267,9 @@ public class TransactionPage extends JPanel {
 
         // Create label and text field for transfer amount
         JLabel transferAmountLabel = new JLabel("Transfer Amount:");
+        transferAmountLabel.setForeground(Color.BLUE); // Set text color
         JTextField transferAmountField = new JTextField();
+        transferAmountField.setBackground(Color.WHITE); // Set text field background color
         transferPanel.add(transferAmountLabel);
         transferPanel.add(transferAmountField);
 
@@ -171,7 +279,6 @@ public class TransactionPage extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Handle transfer action here
-                //String ownerInitials = ownerInitialsField.getText();
                 String transferAmountText = transferAmountField.getText();
                 String tSenderAccount = (String) senderAccountComboBox.getSelectedItem();
                 String senderBank = getBankNameByAccount(tSenderAccount);
@@ -200,6 +307,8 @@ public class TransactionPage extends JPanel {
                 }
             }
         });
+        transferButton.setBackground(Color.WHITE); // Set button background color
+        transferButton.setForeground(Color.BLUE); // Set button text color
         transferPanel.add(new JLabel());
         transferPanel.add(transferButton);
 
@@ -207,11 +316,13 @@ public class TransactionPage extends JPanel {
         transferFrame.setVisible(true);
     }
 
+
     private JPanel createAccountPanel2(Account account) {
         JPanel accountPanel = new JPanel();
         accountPanel.setLayout(new BorderLayout());
         accountPanel.setPreferredSize(new Dimension(150, 100));
         accountPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        accountPanel.setBackground(Color.WHITE); // Set background color
 
         // Get account owner's initials
         User accountOwner = getUserByPassport(account.getPassport());
@@ -222,16 +333,19 @@ public class TransactionPage extends JPanel {
         JLabel ownerInitialsLabel = new JLabel(ownerInitials);
         ownerInitialsLabel.setFont(new Font("Arial", Font.BOLD, 24));
         ownerInitialsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        ownerInitialsLabel.setForeground(Color.BLUE); // Set text color
         accountPanel.add(ownerInitialsLabel, BorderLayout.CENTER);
 
         JLabel ownerAccountNumberLabel = new JLabel(ownerAccountNumber);
         ownerAccountNumberLabel.setFont(new Font("Arial", Font.BOLD, 24));
         ownerAccountNumberLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        ownerAccountNumberLabel.setForeground(Color.BLUE); // Set text color
         accountPanel.add(ownerAccountNumberLabel, BorderLayout.CENTER);
 
         // Create label for amount of money
         JLabel amountLabel = new JLabel("Amount: $" + account.getAmount());
         amountLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        amountLabel.setForeground(Color.BLUE); // Set text color
         accountPanel.add(amountLabel, BorderLayout.SOUTH);
 
         // Create transfer button
@@ -244,10 +358,13 @@ public class TransactionPage extends JPanel {
                 showTransferWindow2(transferToAccountNumber);
             }
         });
+        transferButton.setBackground(Color.WHITE); // Set button background color
+        transferButton.setForeground(Color.BLUE); // Set button text color
         accountPanel.add(transferButton, BorderLayout.NORTH);
 
         return accountPanel;
     }
+
 
     private void showTransferWindow2(String transferToAccountNumber) {
         JFrame transferFrame = new JFrame("Transfer Money");
@@ -257,18 +374,22 @@ public class TransactionPage extends JPanel {
 
         JPanel transferPanel = new JPanel();
         transferPanel.setLayout(new GridLayout(3, 2));
+        transferPanel.setBackground(Color.WHITE); // Set background color
 
         // Create label and text field for account owner's initials
-//        JLabel ownerInitialsLabel = new JLabel("Account Owner Initials:");
-//        JTextField ownerInitialsField = new JTextField();
-//        ownerInitialsField.setEditable(false);
-//        transferPanel.add(ownerInitialsLabel);
-//        transferPanel.add(ownerInitialsField);
+        JLabel ownerInitialsLabel = new JLabel("Account Owner Initials:");
+        JTextField ownerInitialsField = new JTextField();
+        ownerInitialsField.setEditable(false);
+        ownerInitialsLabel.setForeground(Color.BLUE); // Set text color
+        transferPanel.add(ownerInitialsLabel);
+        transferPanel.add(ownerInitialsField);
 
         transactionPassport = getUserPassportByEmail(AuthPage.userEmail);
         List<Account> myAccounts = getUserAccountsByPassport(transactionPassport);
         JLabel senderAccountLabel = new JLabel("Account:");
         JComboBox<String> senderAccountComboBox = new JComboBox<>();
+        senderAccountLabel.setForeground(Color.BLUE); // Set text color
+        senderAccountComboBox.setBackground(Color.WHITE); // Set combo box background color
         for (Account account : myAccounts) {
             senderAccountComboBox.addItem(account.getAccountNumber());
         }
@@ -278,6 +399,8 @@ public class TransactionPage extends JPanel {
         // Create label and text field for transfer amount
         JLabel transferAmountLabel = new JLabel("Transfer Amount:");
         JTextField transferAmountField = new JTextField();
+        transferAmountLabel.setForeground(Color.BLUE); // Set text color
+        transferAmountField.setBackground(Color.WHITE); // Set text field background color
         transferPanel.add(transferAmountLabel);
         transferPanel.add(transferAmountField);
 
@@ -287,7 +410,7 @@ public class TransactionPage extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Handle transfer action here
-                //String ownerInitials = ownerInitialsField.getText();
+                String ownerInitials = ownerInitialsField.getText();
                 String transferAmountText = transferAmountField.getText();
                 String tSenderAccount = (String) senderAccountComboBox.getSelectedItem();
                 String senderBank = getBankNameByAccount(tSenderAccount);
@@ -316,6 +439,8 @@ public class TransactionPage extends JPanel {
                 }
             }
         });
+        transferButton.setBackground(Color.WHITE); // Set button background color
+        transferButton.setForeground(Color.BLUE); // Set button text color
         transferPanel.add(new JLabel());
         transferPanel.add(transferButton);
 
@@ -323,11 +448,27 @@ public class TransactionPage extends JPanel {
         transferFrame.setVisible(true);
     }
 
+
     public String getBankNameByAccountNumber( String accountNumber) {
 
         return null;  // Account number not found
     }
 
+    public List<Account> getAllAccounts() {
+        // Obtain Hibernate session
+        Session session = HibernateUtil.getSessionFactory().openSession();
+
+        try {
+            // Create a query to retrieve accounts with the given account number
+            String queryString = "SELECT a FROM Account a ";
+            Query<Account> query = session.createQuery(queryString, Account.class);
+
+            // Execute the query and return the results
+            return query.getResultList();
+        } finally {
+            session.close();
+        }
+    }
     private void addTransactionToTransfersBetween(String senderAccount, String getterAccount, long transferAmount, OffsetDateTime transactionDate, String senderBank, String getterBank) {
         // Obtain Hibernate session
         Session session = HibernateUtil.getSessionFactory().openSession();
@@ -571,6 +712,31 @@ public class TransactionPage extends JPanel {
         }
 
         return accounts;
+    }
+
+    private List<Account> getOtherPersonAccountByAccountNumber(String accountNumber, String passport) {
+        List<Account> account = null;
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
+
+        try {
+            String hql = "FROM Account a WHERE a.accountNumber = :accountNumber AND a.passport != :passport";
+            Query<Account> query = session.createQuery(hql);
+            query.setParameter("accountNumber", accountNumber);
+            query.setParameter("passport", passport);
+            query.setMaxResults(1); // Retrieve only one account
+
+            account = query.getResultList();
+
+            session.getTransaction().commit();
+        } catch (Exception e) {
+            session.getTransaction().rollback();
+            e.printStackTrace();
+        } finally {
+            session.close();
+        }
+
+        return account;
     }
 
     private User getUserByPassport(String passport) {
